@@ -1,0 +1,204 @@
+
+--Inprired by https://www.gamecity.ne.jp/sangokushi13/wpk/
+
+--This databases the game named Romance of Three Kingdoms.
+--
+--(220 - 266, history called Cao Wei, Wei Dynasty) 
+--Wei was the political power of the North and Central Plains in the history of the Eastern Han Dynasty.
+--
+--(221 - 263, history called Jihan, Shu) 
+--Shu was a political power in the southwestern part of the Three Kingdoms period in Chinese history.
+--
+--(222 - 280, history called Sun Wu or Wu) 
+--Wu was the political power established by Sun Ce and Sun Quan during the Three Kingdoms period in Chinese history.
+--
+--
+
+
+DROP TABLE City CASCADE;
+DROP TABLE Strategy CASCADE;
+DROP TABLE Nation CASCADE;
+DROP TABLE Knight CASCADE;
+DROP TABLE ArmyGroup CASCADE;
+DROP TABLE Skills CASCADE;
+DROP TABLE Position CASCADE;
+DROP TABLE Learned CASCADE;
+
+
+
+CREATE TABLE Strategy(
+ NameofStrategy         text NOT NULL,
+ DescriptionofStrategy  text NOT NULL,
+ 
+CONSTRAINT rtk_str_pk PRIMARY KEY (NameofStrategy)
+);
+
+
+
+CREATE TABLE Skills(
+  NameofSkill               text NOT NULL,
+  EffectofSkill             text NOT NULL,
+  
+  CONSTRAINT rtk_sk_pk PRIMARY KEY (NameofSkill)
+);
+
+
+CREATE TABLE Position(
+  NameofPosition                    text NOT NULL,
+  DescriptionofPosition             text,
+  
+  CONSTRAINT rtk_pt_pk PRIMARY KEY (NameofPosition)
+);
+
+CREATE TABLE Nation(
+  NameofNation      text NOT NULL,
+  NameofLord        text NOT NULL,
+
+  CONSTRAINT rtk_nation_pk PRIMARY KEY (NameofNation)
+);
+
+CREATE TABLE ArmyGroup(
+  NameofArmyGroup        text,
+  HeadofArmyGroup        text,
+  NameofStrategy         text,
+  NameofNation           text,
+  Soldier                integer,
+  Food                   integer NOT NULL,
+  Weapon                 integer,
+  
+  CONSTRAINT rtk_ag_pk PRIMARY KEY (NameofArmyGroup,HeadofArmyGroup),
+  CONSTRAINT rtk_agfk_strategy FOREIGN KEY (NameofStrategy) REFERENCES Strategy(NameofStrategy)
+                                                            ON DELETE CASCADE,
+  CONSTRAINT rtk_agfk_na FOREIGN KEY(NameofNation) REFERENCES Nation(NameofNation)
+                                                            ON DELETE CASCADE,
+  CONSTRAINT ag_soldier_ck CHECK (Soldier>=0),
+  CONSTRAINT ag_food_ck CHECK (Food>=0),
+  CONSTRAINT ag_weapon_ck CHECK(Weapon>=0)
+);
+
+
+
+
+CREATE TABLE City(
+  NameofCity       text NOT NULL,
+  NameofNation     text,
+  NameofLord       text,
+  Food             integer,
+  Coin             integer,
+  Population       integer,
+  Soldier          integer,
+  Weapon           integer,
+  Durable          integer,
+  Faithfulness     integer,
+
+  CONSTRAINT rtk_city_pk PRIMARY KEY(NameofCity),
+  CONSTRAINT rtk_cityfk_nation FOREIGN KEY(NameofNation) REFERENCES Nation(NameofNation),
+  CONSTRAINT ct_food_ck CHECK(Food>=0),
+  CONSTRAINT ct_coin_ck CHECK(Coin>=0),
+  CONSTRAINT ct_population_ck CHECK(Population>=0),
+  CONSTRAINT ct_soldier_ck CHECK(Soldier>=0),
+  CONSTRAINT ct_weapon_ck CHECK(Weapon>=0),
+  CONSTRAINT ct_faithfulness_ck CHECK(Faithfulness>=0)
+);
+
+
+CREATE TABLE Knight(
+  NameofKnight        text NOT NULL,
+  NameofArmyGroup     text,
+  HeadofArmyGroup     text,
+  NameofCity          text,
+  NameofPosition      text,
+  Gender              text NOT NULL,
+  Age                 integer,  
+  NameofNation        text, 
+  CommanderPower      integer NOT NULL,
+  ForceValue          integer NOT NULL,
+  Intelligence        integer NOT NULL,
+  PoliticalPower      integer NOT NULL,
+  
+  CONSTRAINT  rtk_kt_pk PRIMARY KEY(NameofKnight),
+  CONSTRAINT  rtk_ktfk_ag FOREIGN KEY(NameofArmyGroup,HeadofArmyGroup)REFERENCES ArmyGroup(NameofArmyGroup,HeadofArmyGroup),
+  CONSTRAINT  rtk_ktfk_na FOREIGN KEY(NameofNation) REFERENCES Nation(NameofNation),
+  CONSTRAINT  rtk_ktfk_ct FOREIGN KEY(NameofCity) REFERENCES City(NameofCity),                                                                                                                                                                         
+  CONSTRAINT  rtk_ktfk_position FOREIGN KEY (NameofPosition) REFERENCES Position(NameofPosition),
+  CONSTRAINT  kt_age_ck CHECK(Age>=0),
+  CONSTRAINT  kt_gender_ck CHECK(Gender IN ('M','F'))
+);
+
+CREATE TABLE Learned(
+  NameofKnight        text NOT NULL,
+  NameofSkill         text NOT NULL,
+
+  CONSTRAINT  rtk_ks_pk PRIMARY KEY(NameofKnight,NameofSkill),
+  CONSTRAINT  rtk_ksfk_kt FOREIGN KEY (NameofKnight) REFERENCES Knight,
+  CONSTRAINT  rtk_ksfk_skill FOREIGN KEY (NameofSkill) REFERENCES Skills
+);
+
+
+CREATE VIEW WeiKnight AS
+    SELECT NameofCity AS City,NameofKnight as Knight,NameofNation AS Nation,Age
+    FROM  City natural join Knight
+    WHERE Knight.NameofNation = 'Wei'
+    ORDER BY Age;
+
+
+
+
+
+INSERT INTO Strategy VALUES('Offensive','Attack other countries');
+INSERT INTO Strategy VALUES('Defensive','Defend the territory from the aggression of other national Army Group');
+INSERT INTO Strategy VALUES('Support','Support the national army that is fighting nearby');
+INSERT INTO Strategy VALUES('Productive','Production of weapon and food');
+
+INSERT INTO Skills VALUES('Alert','Increase the defense of the ArmyGroup for one month');
+INSERT INTO Skills VALUES('SpeedUp','Increase the marching speed of the ArmyGroup for three month');
+INSERT INTO Skills VALUES('Sneak Attack','Collaborate with local armed forces to attack enemy forces with a 50% chance to capture enemy knights');
+
+INSERT INTO Position VALUES('Lord','King of the Nation');
+INSERT INTO Position VALUES('Prime Minister','Prime Minister of the Nation');
+INSERT INTO Position VALUES('Dudu','Leader of the Heads of Army Group');
+INSERT INTO Position VALUES('Knight','Warrior or  Head of Army Group');
+
+INSERT INTO Nation VALUES('Wei','Cao Cao');
+INSERT INTO Nation VALUES('Shu','Liu Bei');
+INSERT INTO Nation VALUES('Wu','Sun Quan');
+
+
+
+INSERT INTO ArmyGroup VALUES('Central Army1','Zhao Yun','Offensive','Shu',12000,50000,30000);
+INSERT INTO ArmyGroup VALUES('Western Army1','Zhang Fei','Defensive','Shu',60000,120000,100000); 
+INSERT INTO ArmyGroup VALUES('Southern Army1','Xiahou Dun','Support','Wei',80000,20000,60000);
+INSERT INTO ArmyGroup VALUES('Productive Army1','Xu Chu','Productive','Wei',180000,700000,30000);
+INSERT INTO ArmyGroup VALUES('Naval Army1','Zhou Yu','Offensive','Wu',200000,800000,160000);
+
+
+
+INSERT INTO City VALUES('Wu Chang','Wu','Sun Quan',100000,75000,200000,20000,9000,100,100);
+INSERT INTO City VALUES('Xu Chang','Wei','Cao Cao',250000,80000,100000,100000,13000,88,100);
+INSERT INTO City VALUES('Cheng Du','Shu','Liu Bei',200000,150000,100000,70000,100000,90,100);
+INSERT INTO City VALUES('Jin Zhou','Shu','Liu Bei',10000,7500,21000,25000,19000,100,70);
+INSERT INTO City VALUES('Ji Zhou','Shu','Liu Bei',150000,50000,150000,70000,60000,100,100);
+INSERT INTO City VALUES('Bian Zhou','Wei','Cao Cao',130000,40000,110000,40000,30000,100,100);
+
+INSERT INTO Knight VALUES('Xu Chu','Productive Army1','Xu Chu','Xu Chang','Knight','M',32,'Wei',87,100,57,72);
+INSERT INTO Knight VALUES('Zhao Yun','Central Army1','Zhao Yun','Cheng Du','Knight','M',28,'Shu',97,110,76,82);
+INSERT INTO Knight VALUES('Zhang Fei','Western Army1','Zhang Fei','Jin Zhou','Knight','M',36,'Shu',80,102,82,69);
+INSERT INTO Knight VALUES('Xiahou Dun','Southern Army1','Xiahou Dun','Bian Zhou','Knight','M',30,'Wei',83,92,53,70);
+INSERT INTO Knight VALUES('Zhou Yu','Naval Army1','Zhou Yu','Wu Chang','Dudu','M',34,'Shu',98,103,78,82);
+INSERT INTO Knight VALUES('Cao Cao','Productive Army1','Xu Chu','Xu Chang','Lord','M',40,'Wei',99,109,88,92);
+INSERT INTO Knight VALUES('Liu Bei','Central Army1','Zhao Yun','Ji Zhou','Lord','M',44,'Shu',92,99,101,90);
+INSERT INTO Knight VALUES('Sun Quan','Naval Army1','Zhou Yu','Wu Chang','Lord','M',39,'Wu',87,96,82,87);
+
+
+INSERT INTO Learned VALUES('Xu Chu','Sneak Attack');
+INSERT INTO Learned VALUES('Zhao Yun','SpeedUp');
+INSERT INTO Learned VALUES('Zhang Fei','Alert');
+INSERT INTO Learned VALUES('Xiahou Dun','Sneak Attack');
+INSERT INTO Learned VALUES('Zhou Yu','Alert');
+INSERT INTO Learned VALUES('Cao Cao','SpeedUp');
+INSERT INTO Learned VALUES('Liu Bei','Alert');
+INSERT INTO Learned VALUES('Sun Quan','SpeedUp');
+
+
+
+
